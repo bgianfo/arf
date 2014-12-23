@@ -55,8 +55,7 @@ defmodule Arf do
              right: tree(occupied: true, range: {range_begin, range_end}))
 
       # Handle split of root where the inserted range intersecs with beginning of existing.
-      # Existing: 3-10
-      # Inserted: 1-4
+      #
       {true, nil, nil} when ins_end in range_begin .. range_end ->
         mid = median(ins_begin .. range_end)
 
@@ -65,8 +64,7 @@ defmodule Arf do
              right: tree(occupied: true, range: {mid+1, range_end}))
 
       # Handle split of root where the inserted range intersecs with end of existing.
-      # Existing: 3-10
-      # Inserted: 1-4
+      #
       {true, nil, nil} when range_end in ins_begin .. ins_end ->
         mid = median(range_begin .. ins_end)
 
@@ -75,9 +73,12 @@ defmodule Arf do
              right: tree(occupied: true, range: {mid+1, ins_end}))
 
       # Node with real data on both sides.
+      #
       {nil, ln, rn} ->
         {_, _, {_, lre}, _, _} = ln
 
+        # If the range can fit left, go there, otherwise go right
+        #
         if (ins_end <= lre) do
          newnode = insert(ln, ins_begin, ins_end)
          tree(range: {min(range_begin, ins_end), range_end},
