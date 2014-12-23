@@ -1,4 +1,4 @@
-defmodule ARF.Mixfile do
+defmodule Arf.Mixfile do
   use Mix.Project
 
   def project do

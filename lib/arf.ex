@@ -1,10 +1,13 @@
-defmodule ARF do
+defmodule Arf do
 
   require Record
 
   # Invariant: left.range <= range <= right.range
-  Record.defrecordp :tree, __MODULE__, occupied: false, range: {nil,nil}, left: nil, right: nil
+  Record.defrecordp :tree, __MODULE__, occupied: nil, range: {nil,nil}, left: nil, right: nil
 
+  @doc """
+  Returns a new (empty) Adaptive Range Filter.
+  """
   def new() do
     tree()
   end
@@ -13,11 +16,79 @@ defmodule ARF do
   Encode a single value into the Adaptive Range Filter.
   Returns the modified Adaptive Range Filter.
   """
-  def insert({_tag, occupied, _range, _left, _right}, value) do
-    if (!occupied) do
-      tree(range: {value, value}, occupied: true)
-    else
-      raise "Not Implemented!"
+  def insert(tree, ins_begin, ins_end) when Record.is_record(tree) do
+
+    if (ins_begin > ins_end) do
+      raise "Inserted range begining must be less than inserted range end."
+    end
+
+    {__MODULE__, occupied, {range_begin, range_end}, left_node, right_node} = tree
+
+    case {occupied, left_node, right_node} do
+
+      # Empty tree, when not occupied
+      {nil, nil, nil} ->
+        tree(occupied: true, range: {ins_begin, ins_end})
+
+      # Handle insertion of subset in root.
+      #
+      {true, nil, nil} when ins_begin >= range_begin and ins_end <= range_end ->
+        tree
+
+      # Handle insertion of superset in root.
+      #
+      {true, nil, nil} when ins_begin <= range_begin and ins_end >= range_end ->
+        tree(occupied: true, range: {ins_begin, ins_end})
+
+      # Handle split of root where the inserted range is greater than existing.
+      #
+      {true, nil, nil} when ins_begin > range_end ->
+        tree(range: {range_begin, ins_end},
+             left: tree(occupied: true, range: {range_begin, range_end}),
+             right: tree(occupied: true, range: {ins_begin, ins_end}))
+
+      # Handle split of root where the inserted range is less than existing.
+      #
+      {true, nil, nil} when ins_end < range_begin ->
+        tree(range: {ins_begin, range_end},
+             left: tree(occupied: true, range: {ins_begin, ins_end}),
+             right: tree(occupied: true, range: {range_begin, range_end}))
+
+      # Handle split of root where the inserted range intersecs with beginning of existing.
+      # Existing: 3-10
+      # Inserted: 1-4
+      {true, nil, nil} when ins_end in range_begin .. range_end ->
+        mid = median(ins_begin .. range_end)
+
+        tree(range: {ins_begin, range_end},
+             left: tree(occupied: true, range: {ins_begin, mid}),
+             right: tree(occupied: true, range: {mid+1, range_end}))
+
+      # Handle split of root where the inserted range intersecs with end of existing.
+      # Existing: 3-10
+      # Inserted: 1-4
+      {true, nil, nil} when range_end in ins_begin .. ins_end ->
+        mid = median(range_begin .. ins_end)
+
+        tree(range: {range_begin, ins_end},
+             left: tree(occupied: true, range: {range_begin, mid}),
+             right: tree(occupied: true, range: {mid+1, ins_end}))
+
+      # Node with real data on both sides.
+      {nil, ln, rn} ->
+        {_, _, {_, lre}, _, _} = ln
+
+        if (ins_end <= lre) do
+         newnode = insert(ln, ins_begin, ins_end)
+         tree(range: {min(range_begin, ins_end), range_end},
+             left: newnode,
+             right: rn)
+        else
+         newnode = insert(rn, ins_begin, ins_end)
+         tree(range: {range_begin, max(range_end, ins_end)},
+             left: ln,
+             right: newnode)
+        end
     end
   end
 
@@ -27,35 +98,46 @@ defmodule ARF do
   """
   def member(nil, _value), do: false
   def member(tree, value) when Record.is_record(tree) do
-    {__MODULE__, _occupied, range, left_node, right_node} = tree
-    if (in_range(range, value)) do
-      member_branch(left_node, value) || member_branch(right_node, value)
+
+    {__MODULE__, occupied, {range_begin, range_end}, left_node, right_node} = tree
+
+    case {occupied, left_node, right_node} do
+
+      # Empty tree, when not occupied
+      {nil, nil, nil} ->
+        false
+
+      # Occupied root or leaf node.
+      {true, nil, nil} ->
+        range_begin <= value and value <= range_end
+
+      # Un-Occupied root or leaf node.
+      {false, nil, nil} ->
+        false
+
+      # Root with nodes
+      {nil, l, r} ->
+        member(l, value) || member(r, value)
+
+    end
+
+  end
+
+  defp median(list) do
+    sorted = Enum.sort(list)
+    middle = (Enum.count(list) - 1) / 2
+    f_middle = Float.floor(middle) |> Kernel.trunc
+    {:ok, m1} = Enum.fetch(sorted, f_middle)
+    if middle > f_middle do
+      {:ok, m2} = Enum.fetch(sorted, f_middle+1)
+      mean([m1,m2])
     else
-      false
+      m1
     end
   end
 
-  """
-  Performs the actual tree traversal.
-  """
-  defp member_branch({__MODULE__, occupied, range, _left, _right}, value) do
-    if (occupied and in_range(range, value)) do
-      true
-    else
-      false
-    end
+  defp mean(list) do
+    Enum.sum(list) / Enum.count(list)
   end
-
-  defp in_range({range_begin, range_end}, value) do
-    range_begin <= value and range_end >= value
-  end
-
-  """
-  Check if this is a leaf node in the tree.
-  Returns `true` if so, `false` otherwise.
-  """
-  #defp is_leaf({_tag, _occupied, _range, _left, _right}), do:  true
-  #defp is_leaf({_tag, _occupied, _range, nil, nil}), do: false
-
 
 end
