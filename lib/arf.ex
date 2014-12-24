@@ -2,6 +2,8 @@ defmodule Arf do
 
   require Record
 
+  require Statistics
+
   # Invariant: left.range <= range <= right.range
   Record.defrecordp :tree, __MODULE__, occupied: nil, range: {nil,nil}, left: nil, right: nil
 
@@ -54,19 +56,19 @@ defmodule Arf do
              left: tree(occupied: true, range: {ins_begin, ins_end}),
              right: tree(occupied: true, range: {range_begin, range_end}))
 
-      # Handle split of root where the inserted range intersecs with beginning of existing.
+      # Handle split of root where the inserted range intersect with beginning of existing.
       #
       {true, nil, nil} when ins_end in range_begin .. range_end ->
-        mid = median(ins_begin .. range_end)
+        mid = Statistics.median(ins_begin .. range_end)
 
         tree(range: {ins_begin, range_end},
              left: tree(occupied: true, range: {ins_begin, mid}),
              right: tree(occupied: true, range: {mid+1, range_end}))
 
-      # Handle split of root where the inserted range intersecs with end of existing.
+      # Handle split of root where the inserted range intersect with end of existing.
       #
       {true, nil, nil} when range_end in ins_begin .. ins_end ->
-        mid = median(range_begin .. ins_end)
+        mid = Statistics.median(range_begin .. ins_end)
 
         tree(range: {range_begin, ins_end},
              left: tree(occupied: true, range: {range_begin, mid}),
@@ -122,23 +124,6 @@ defmodule Arf do
 
     end
 
-  end
-
-  defp median(list) do
-    sorted = Enum.sort(list)
-    middle = (Enum.count(list) - 1) / 2
-    f_middle = Float.floor(middle) |> Kernel.trunc
-    {:ok, m1} = Enum.fetch(sorted, f_middle)
-    if middle > f_middle do
-      {:ok, m2} = Enum.fetch(sorted, f_middle+1)
-      mean([m1,m2])
-    else
-      m1
-    end
-  end
-
-  defp mean(list) do
-    Enum.sum(list) / Enum.count(list)
   end
 
 end
