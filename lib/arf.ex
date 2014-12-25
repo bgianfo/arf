@@ -1,4 +1,12 @@
 defmodule Arf do
+  @moduledoc """
+  This module defines a data structure known as an
+  Adaptive Range Filter. The data structure tracks
+  ranges of data and lets the user probe it for
+  membership information with a certain degree of
+  confidence.
+
+  """
 
   require Record
 
@@ -9,6 +17,12 @@ defmodule Arf do
 
   @doc """
   Returns a new (empty) Adaptive Range Filter.
+
+  ## Examples
+
+      iex> arf = Arf.new()
+      {Arf, nil, {nil, nil}, nil, nil}
+
   """
   def new() do
     tree()
@@ -17,11 +31,17 @@ defmodule Arf do
   @doc """
   Encode a single value into the Adaptive Range Filter.
   Returns the modified Adaptive Range Filter.
+
+  ## Examples
+
+      iex> Arf.new() |> Arf.insert(1, 300)
+      {Arf, true, {1, 300}, nil, nil}
+
   """
   def insert(tree, ins_begin, ins_end) when Record.is_record(tree) do
 
     if (ins_begin > ins_end) do
-      raise "Inserted range begining must be less than inserted range end."
+      raise "Inserted range beginning must be less than inserted range end."
     end
 
     {__MODULE__, occupied, {range_begin, range_end}, left_node, right_node} = tree
@@ -83,7 +103,7 @@ defmodule Arf do
         #
         if (ins_end <= lre) do
          newnode = insert(ln, ins_begin, ins_end)
-         tree(range: {min(range_begin, ins_end), range_end},
+         tree(range: {min(range_begin, ins_begin), range_end},
              left: newnode,
              right: rn)
         else
@@ -98,13 +118,22 @@ defmodule Arf do
   @doc """
   Check if a value is encoded in the Adaptive Range Filter.
   Returns `true` if so, `false` otherwise
+
+  ## Examples
+
+      iex> Arf.new() |> Arf.insert(1, 300) |> Arf.member(5)
+      true
+
+      iex> Arf.new() |> Arf.insert(1, 300) |> Arf.member(750)
+      false
+
   """
   def member(nil, _value), do: false
   def member(tree, value) when Record.is_record(tree) do
 
-    {__MODULE__, occupied, {range_begin, range_end}, left_node, right_node} = tree
+    {__MODULE__, occupied, {range_begin, range_end}, lnode, rnode} = tree
 
-    case {occupied, left_node, right_node} do
+    case {occupied, lnode, rnode} do
 
       # Empty tree, when not occupied
       {nil, nil, nil} ->
@@ -114,13 +143,18 @@ defmodule Arf do
       {true, nil, nil} ->
         range_begin <= value and value <= range_end
 
-      # Un-Occupied root or leaf node.
+      # Un-occupied root or leaf node.
       {false, nil, nil} ->
         false
 
-      # Root with nodes
-      {nil, l, r} ->
-        member(l, value) || member(r, value)
+      # Root with nodes..
+      # If we are a root we can short circuit queries into the tree
+      # when the value is out of the entire range of the tree.
+      {nil, l, r} when range_begin <= value and value <= range_end ->
+          member(l, value) || member(r, value)
+
+      # Root with nodes out of range ..
+      {nil, _, _} -> false
 
     end
 

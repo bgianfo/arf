@@ -1,6 +1,32 @@
 defmodule ArfTest do
-  use ExUnit.Case#, async: true
+
+  use ExUnit.Case, async: true
+
+  doctest Arf
+
   require Record
+
+  """
+  Macro for bulk asserting membership.
+  """
+  defmacrop assert_members(arf, list) do
+    for val <- list do
+      quote do
+        assert Arf.member(unquote(arf), unquote(val))
+      end
+    end
+  end
+
+  """
+  Macro for bulk asserting non-membership.
+  """
+  defmacrop refute_members(arf, list) do
+    for val <- list do
+      quote do
+        refute Arf.member(unquote(arf), unquote(val))
+      end
+    end
+  end
 
   test "new is not nil valid record" do
     arf = Arf.new()
@@ -9,7 +35,13 @@ defmodule ArfTest do
   end
 
   test "membership for nil" do
-    assert Arf.member(nil, 1) == false
+    refute Arf.member(nil, 1)
+  end
+
+  test "Insert invalid range throws" do
+    assert_raise(RuntimeError, fn ->
+      Arf.new() |> Arf.insert(6,3)
+    end)
   end
 
   test "simple one insert and membership" do
@@ -20,159 +52,113 @@ defmodule ArfTest do
 
   test "duplicate insert and membership" do
     arf = Arf.new() |> Arf.insert(1, 2)
-
     arfsecond = Arf.insert(arf, 1, 2)
-
     assert arf == arfsecond
   end
 
- test "insert two with a superset " do
-   arf = Arf.new()
-         |> Arf.insert(3, 6)
-         |> Arf.insert(2, 8)
-
-   assert Arf.member(arf, 2)
-   assert Arf.member(arf, 3)
-   assert Arf.member(arf, 6)
-   assert Arf.member(arf, 8)
-   assert Arf.member(arf, 5)
+  test "insert two with a superset " do
+    arf = barf([{3, 6}, {2, 8}])
+    assert_members(arf, [2, 3, 6, 8, 5])
   end
 
- test "insert two with a subset " do
-   arf = Arf.new()
-         |> Arf.insert(2, 8)
-         |> Arf.insert(3, 6)
-
-   assert Arf.member(arf, 2)
-   assert Arf.member(arf, 3)
-   assert Arf.member(arf, 6)
-   assert Arf.member(arf, 8)
-   assert Arf.member(arf, 5)
+  test "insert two with a subset " do
+    arf = barf([{2, 8}, {3, 6}])
+    assert_members(arf, [2, 3, 6, 8, 5])
   end
 
   test "two inserts non-overlapping" do
-   arf = Arf.new() 
-         |> Arf.insert(1, 2) \
-         |> Arf.insert(3, 4)
-
-   assert Arf.member(arf, 2)
-   assert Arf.member(arf, 3)
+    arf = barf([{1,2}, {3,4}])
+    assert_members(arf, [2, 3])
   end
 
   test "two inserts non-overlapping reverse order" do
-   arf = Arf.new()
-         |> Arf.insert(3, 4)
-         |> Arf.insert(1, 2)
-
-   assert Arf.member(arf, 2)
-   assert Arf.member(arf, 3)
+    arf = barf([{3,4}, {1,2}])
+    assert_members arf, [2, 3]
   end
 
   test "two inserts overlapping with existing beginning of ranger" do
-   arf = Arf.new()
-         |> Arf.insert(3, 10)
-         |> Arf.insert(1, 7)
-
-   assert Arf.member(arf, 1)
-   assert Arf.member(arf, 10)
-   assert Arf.member(arf, 3)
-   assert Arf.member(arf, 7)
-   assert Arf.member(arf, 5)
+    arf = barf([{3,10}, {1,7}])
+    assert_members arf, [1, 10, 3, 7, 5]
   end
 
   test "two inserts overlapping with existing end of ranger" do
-   arf = Arf.new()
-         |> Arf.insert(3, 10)
-         |> Arf.insert(8, 20)
-
-   assert Arf.member(arf, 3)
-   assert Arf.member(arf, 10)
-   assert Arf.member(arf, 8)
-   assert Arf.member(arf, 20)
-   assert Arf.member(arf, 9)
+    arf = barf([{3,8}, {8,20}])
+    assert_members arf, [3, 10, 8, 20, 9]
   end
 
   test "three inserts non-overlapping" do
-    arf = Arf.new()
-          |> Arf.insert(1, 2)
-          |> Arf.insert(3, 4)
-          |> Arf.insert(5, 6)
-
-    # Validate positive memberships
-    assert Arf.member(arf, 1)
-    assert Arf.member(arf, 3)
-    assert Arf.member(arf, 6)
-
-    # Validate negative memberships
-    assert not Arf.member(arf, -1)
-    assert not Arf.member(arf, 8)
+    arf = barf([{1,2}, {3,4}, {5,6}])
+    assert_members arf, [1, 3, 6]
+    refute_members arf, [-1, 8]
   end
 
   test "three inserts non-overlapping reverse" do
-    arf = Arf.new()
-          |> Arf.insert(5, 6)
-          |> Arf.insert(3, 4)
-          |> Arf.insert(1, 2)
-
-    # Validate positive memberships
-    assert Arf.member(arf, 1)
-    assert Arf.member(arf, 3)
-    assert Arf.member(arf, 6)
-
-    # Validate negative memberships
-    assert not Arf.member(arf, -1)
-    assert not Arf.member(arf, 8)
+    arf = barf([{5,6}, {3,4}, {1,2}])
+    assert_members arf, [1, 3, 6]
+    refute_members arf, [-1, 8]
   end
 
   test "three inserts overlapping" do
-    arf = Arf.new()
-          |> Arf.insert(1, 3)
-          |> Arf.insert(2, 4)
-          |> Arf.insert(3, 6)
-
-    assert Arf.member(arf, 1)
-    assert Arf.member(arf, 3)
-    assert Arf.member(arf, 6)
-
-    assert Arf.member(arf, -1) == false
-    assert Arf.member(arf, 8) == false
+    arf = barf([{1,3}, {2,4}, {3,6}])
+    assert_members arf, [1, 3, 6]
+    refute_members arf, [-1, 8]
   end
 
   test "three inserts overlapping - different order" do
-    arf = Arf.new()
-          |> Arf.insert(1, 3)
-          |> Arf.insert(4, 6)
-          |> Arf.insert(2, 5)
-
-    # Validate positive memberships
-    assert Arf.member(arf, 1)
-    assert Arf.member(arf, 3)
-    assert Arf.member(arf, 6)
-
-    # Validate negative memberships
-    assert not Arf.member(arf, -1)
-    assert not Arf.member(arf, 8)
+    arf = barf([{1,3}, {4,6}, {2, 5}])
+    assert_members arf, [1, 3, 6]
+    refute_members arf, [-1, 8]
   end
 
   test "six inserts non-overlapping" do
-    arf = Arf.new()
-          |> Arf.insert(5, 6)
-          |> Arf.insert(3, 4)
-          |> Arf.insert(1, 2)
-          |> Arf.insert(7, 8)
-          |> Arf.insert(-1, 0)
-          |> Arf.insert(9, 10)
+
+    arf = barf([{5,6}, {3,4}, {1,2}, {7,8}, {-2, -1}, {9, 10}])
 
     # Validate positive memberships
-    assert Arf.member(arf, 1)
-    assert Arf.member(arf, 3)
-    assert Arf.member(arf, 6)
-    assert Arf.member(arf, -1)
-    assert Arf.member(arf, 8)
-    assert Arf.member(arf, 10)
+    assert_members arf, [1,3,6,-1,8,10]
 
     # Validate negative memberships
-    assert not Arf.member(arf, -8)
+    refute_members arf, [-8, 0]
+
+    ex = {Arf, nil, {-2, 10},
+           {Arf, nil, {-2, 4},
+             {Arf, nil, {-2, 2},
+               {Arf, true, {-2, -1}, nil, nil},
+               {Arf, true, {1, 2}, nil, nil}},
+             {Arf, true, {3, 4}, nil, nil}},
+           {Arf, nil, {5, 10},
+             {Arf, true, {5, 6}, nil, nil},
+             {Arf, nil, {7, 10},
+               {Arf, true, {7, 8}, nil, nil},
+               {Arf, true, {9, 10}, nil, nil}}}}
+
+    assert arf == ex
+  end
+
+  test "large range inserts" do
+
+    arf = barf([{-20,5}, {3,100}, {75,100}, {500,1000}, {2000, 9000}])
+
+    assert_members arf, [-20, 3, 4, 5, 74, 75, 1000, 2000, 9000]
+
+    assert arf == {Arf, nil, {-20, 9000},
+                    {Arf, true, {-20, 40}, nil, nil},
+                    {Arf, nil, {41, 9000},
+                      {Arf, true, {41, 100}, nil, nil},
+                      {Arf, nil, {500, 9000},
+                        {Arf, true, {500, 1000}, nil, nil},
+                        {Arf, true, {2000, 9000}, nil, nil}}}}
+  end
+
+  """
+  Build an arf from a list of ranges
+  """
+  defp barf(ranges) do
+
+    Enum.reduce(ranges, Arf.new(), fn {s, e}, acc ->
+      Arf.insert(acc, s, e)
+    end)
 
   end
+
 end
