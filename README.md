@@ -1,8 +1,7 @@
 ARF - Adaptive Range Filter
 ===
 
-
-[![Build Status](https://travis-ci.org/msharp/elixir-statistics.svg?branch=master)](https://travis-ci.org/msharp/elixir-statistics)
+[![Build Status](https://travis-ci.org/bgianfo/arf.svg?branch=master)](https://travis-ci.org/bgianfo/arf)
 <!--[![hex.pm version](https://img.shields.io/hexpm/v/arf.svg?style=flat)](https://hex.pm/packages/arf)-->
 
 Current Status: _Prototype_
