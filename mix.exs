@@ -20,7 +20,7 @@ defmodule Arf.Mixfile do
   defp deps do
     [
       { :statistics, "~> 0.2.0" },
-      { :excoveralls, "~> 0.3", only: :dev }
+      { :excoveralls, "~> 0.3", only: [:dev, :test] }
     ]
   end
 
