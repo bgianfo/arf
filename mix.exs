@@ -2,12 +2,15 @@ defmodule Arf.Mixfile do
   use Mix.Project
 
   def project do
-    [app: :arf,
-     version: "0.0.1",
-     elixir: "~> 1.0",
-     desription: description,
-     package: package,
-     deps: deps]
+    [
+      app: :arf,
+      version: "0.0.1",
+      elixir: "~> 1.0",
+      desription: description,
+      package: package,
+      deps: deps,
+      test_coverage: [tool: ExCoveralls]
+    ]
   end
 
   # Configuration for the OTP application
@@ -19,7 +22,8 @@ defmodule Arf.Mixfile do
 
   defp deps do
     [
-      { :statistics, "~> 0.2.0"}
+      { :statistics, "~> 0.2.0"},
+      {:excoveralls, "~> 0.3", only: :dev}
     ]
   end
 
@@ -28,12 +32,15 @@ defmodule Arf.Mixfile do
   end
 
   defp package do
-    [files: ~w(lib test mix.exs README.md),
-     contributors: ["Brian Gianforcaro"],
-     licenses: ["BSD"],
-     links: %{"GitHub" => "https://github.com/okeuday/trie",
-              "Paper" => "http://www.vldb.org/pvldb/vol6/p1714-kossmann.pdf"
-             }]
+    [
+      files: ~w(lib test mix.exs README.md),
+      contributors: ["Brian Gianforcaro"],
+      licenses: ["BSD"],
+      links: %{
+                "GitHub" => "https://github.com/okeuday/trie",
+                "Paper" => "http://www.vldb.org/pvldb/vol6/p1714-kossmann.pdf"
+              }
+    ]
   end
 
 end
