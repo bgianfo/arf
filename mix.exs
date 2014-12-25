@@ -13,17 +13,14 @@ defmodule Arf.Mixfile do
     ]
   end
 
-  # Configuration for the OTP application
-  #
-  # Type `mix help compile.app` for more information
   def application do
     [applications: [:logger]]
   end
 
   defp deps do
     [
-      { :statistics, "~> 0.2.0"},
-      {:excoveralls, "~> 0.3", only: :dev}
+      { :statistics, "~> 0.2.0" },
+      { :excoveralls, "~> 0.3", only: :dev }
     ]
   end
 
@@ -33,12 +30,12 @@ defmodule Arf.Mixfile do
 
   defp package do
     [
-      files: ~w(lib test mix.exs README.md),
+      files: ~w(lib test mix.exs README.md LICENSE.md),
       contributors: ["Brian Gianforcaro"],
       licenses: ["BSD"],
       links: %{
-                "GitHub" => "https://github.com/okeuday/trie",
-                "Paper" => "http://www.vldb.org/pvldb/vol6/p1714-kossmann.pdf"
+                "GitHub" => "https://github.com/bgianfo/arf",
+                "Theoretical Description Of The Data Structure" => "http://www.vldb.org/pvldb/vol6/p1714-kossmann.pdf"
               }
     ]
   end
