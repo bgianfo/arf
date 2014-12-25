@@ -2,14 +2,14 @@ ARF - Adaptive Range Filter
 ===
 
 [![Build Status](https://travis-ci.org/bgianfo/arf.svg?branch=master)](https://travis-ci.org/bgianfo/arf)
+[![Coverage Status](https://coveralls.io/repos/bgianfo/arf/badge.png?branch=master)](https://coveralls.io/r/bgianfo/arf?branch=master)
 <!--[![hex.pm version](https://img.shields.io/hexpm/v/arf.svg?style=flat)](https://hex.pm/packages/arf)-->
 
-Current Status: _Prototype_
+Current Status: **Prototype**
 
-An Adaptive Range Filter (ARF) is a tree based data structure
-which is to range queries, as a bloom filter is to point queries.
+An Adaptive Range Filter (ARF) is a tree based data structure which is to range queries, as a bloom filter is to point queries.
 
-Goals of the ARF:
+Goals of the ARF data structure:
  - Storage Efficient
  - Efficient Lookup
  - Very low risk of false negatives
@@ -18,6 +18,6 @@ Goals of the ARF:
 
 This project is an attempt to implement an Adaptive Range Filter in Elixir.
 
-# Resources: #
- - Original paper from Microsoft Research (MSR) on the data structure: [pdf][http://research.microsoft.com/pubs/220613/p1714-kossmann.pdf]
- - Project page for the paper at MSR: [link][http://research.microsoft.com/apps/pubs/default.aspx?id=220613]
+# External Resources: #
+ - Original paper from Microsoft Research (MSR) on the data structure: [pdf](http://research.microsoft.com/pubs/220613/p1714-kossmann.pdf)
+ - Project page for the paper at MSR: [link](http://research.microsoft.com/apps/pubs/default.aspx?id=220613)
