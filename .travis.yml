@@ -1,0 +1,15 @@
+language: erlang
+otp_release:
+  - 17.0
+before_install:
+  - git clone https://github.com/elixir-lang/elixir
+  - cd elixir && git checkout tags/v1.0.0 && make && cd ..
+before_script:
+  - export PATH=`pwd`/elixir/bin:$PATH
+  - mix local.hex --force
+  - mix deps.get
+script:
+  - mix test
+notifications:
+  recipients:
+    - b.gianfo@gmail.com
