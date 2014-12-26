@@ -21,7 +21,8 @@ defmodule Arf.Mixfile do
     [
       { :statistics, "~> 0.2.0" },
       { :excoveralls, "~> 0.3", only: [:dev, :test] },
-      { :dialyze, "~> 0.1.3", only: [:dev, :test] }
+      { :dialyze, "~> 0.1.3", only: [:dev, :test] },
+      { :inch_ex, only: [:docs] },
     ]
   end
 
