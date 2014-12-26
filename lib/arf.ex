@@ -5,7 +5,6 @@ defmodule Arf do
   ranges of data and lets the user probe it for
   membership information with a certain degree of
   confidence.
-
   """
 
   require Record
@@ -30,8 +29,8 @@ defmodule Arf do
   end
 
   @doc """
-  Encode a single value into the Adaptive Range Filter.
-  Returns the modified Adaptive Range Filter.
+  Encode a range of data staring at `ins_begin` to `ins_end` into the Adaptive Range Filter `tree`.
+  Returns the modified Adaptive Range Filter `tree`.
 
   ## Examples
 
@@ -40,11 +39,10 @@ defmodule Arf do
 
   """
   @spec insert(tree_type, number, number) :: tree_type
+  def insert(_tree, ins_begin, ins_end) when ins_begin > ins_end do
+      raise "The start of the range being inserted (#{ins_begin}) is greater than the end of the range (#{ins_end})."
+  end
   def insert(tree, ins_begin, ins_end) when Record.is_record(tree) do
-
-    if (ins_begin > ins_end) do
-      raise "Inserted range beginning must be less than inserted range end."
-    end
 
     {__MODULE__, occupied, {range_begin, range_end}, left_node, right_node} = tree
 
@@ -118,7 +116,7 @@ defmodule Arf do
   end
 
   @doc """
-  Check if a value is encoded in the Adaptive Range Filter.
+  Check if a `value` is encoded in the Adaptive Range Filter `tree`.
   Returns `true` if so, `false` otherwise
 
   ## Examples
@@ -130,7 +128,6 @@ defmodule Arf do
       false
 
   """
-
   @spec member(tree_type, number) :: boolean
   def member(nil, _value), do: false
   def member(tree, value) when Record.is_record(tree) do
