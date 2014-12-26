@@ -9,10 +9,10 @@ defmodule Arf do
   """
 
   require Record
-
   require Statistics
 
-  # Invariant: left.range <= range <= right.range
+  @type tree_type :: {atom, boolean, {number|nil, number|nil}, nil | tree_type, nil | tree_type}
+
   Record.defrecordp :tree, __MODULE__, occupied: nil, range: {nil,nil}, left: nil, right: nil
 
   @doc """
@@ -24,6 +24,7 @@ defmodule Arf do
       {Arf, nil, {nil, nil}, nil, nil}
 
   """
+  @spec new() :: tree_type
   def new() do
     tree()
   end
@@ -38,6 +39,7 @@ defmodule Arf do
       {Arf, true, {1, 300}, nil, nil}
 
   """
+  @spec insert(tree_type, number, number) :: tree_type
   def insert(tree, ins_begin, ins_end) when Record.is_record(tree) do
 
     if (ins_begin > ins_end) do
@@ -128,6 +130,8 @@ defmodule Arf do
       false
 
   """
+
+  @spec member(tree_type, number) :: boolean
   def member(nil, _value), do: false
   def member(tree, value) when Record.is_record(tree) do
 
