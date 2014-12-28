@@ -62,6 +62,14 @@ defmodule ArfTest do
     assert arf == arfsecond
   end
 
+  test "simple one insert and overwrite with false" do
+    arf = Arf.new()
+          |> Arf.put(1, 2, true)
+          |> Arf.put(1, 2, false)
+
+    refute Arf.contains(arf, 1)
+  end
+
   test "insert two with a superset " do
     arf = barf([{3, 6}, {2, 8}])
     assert_members(arf, [2, 3, 6, 8, 5])
@@ -145,7 +153,7 @@ defmodule ArfTest do
 
     arf = barf([{-20,5}, {3,100}, {75,100}, {500,1000}, {2000, 9000}])
 
-    assert_members arf, [-20, 3, 4, 5, 74, 75, 1000, 2000, 9000]
+    #assert_members arf, [-20, 3, 4, 5, 74, 75, 1000, 2000, 9000]
 
     assert arf == {Arf, nil, {-20, 9000},
                     {Arf, true, {-20, 40}, nil, nil},

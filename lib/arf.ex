@@ -38,80 +38,91 @@ defmodule Arf do
   """
   @spec put(tree_type, number, number, boolean) :: tree_type
 
-  def put(_tree, ins_begin, ins_end, _exists) when ins_begin > ins_end do
-      raise "The start of the range being inserted (#{ins_begin}) is greater than the end of the range (#{ins_end})."
+  def put(tree, ins_begin, ins_end, exists \\ true) when Record.is_record(tree) do
+    {__MODULE__, occupied, range, left_node, right_node} = tree
+
+    iput({occupied, range, left_node, right_node}, ins_begin, ins_end, exists)
+  end
+ 
+  # Handle error case for invalid paramaters.
+  defp iput({_, {_, _}, _, _}, i_begin, i_end, _) when i_begin > i_end do
+    raise "The start of the range being inserted (#{i_begin}) is greater than the end of the range (#{i_end})."
   end
 
-  def put(tree, ins_begin, ins_end, exists \\ true) when Record.is_record(tree) do
+  # Handle insertion to root.
+  defp iput({nil, {_, _}, nil, nil}, i_begin, i_end, exists) do
+    tree(occupied: exists, range: {i_begin, i_end})
+  end
 
-    {__MODULE__, occupied, {range_begin, range_end}, left_node, right_node} = tree
+  # Handle insertion of subset in root.
+  defp iput({true, {r_begin, r_end}, nil, nil}, i_begin, i_end, exists)
+  when i_begin >= r_begin and i_end <= r_end do
+    # Need to create a new tree, since we don't have access to the original
+    tree(occupied: exists, range: {r_begin, r_end})
+  end
 
-    case {occupied, left_node, right_node} do
+  # Handle insertion of superset in root.
+  defp iput({true, {r_begin, r_end}, nil, nil}, i_begin, i_end, _exists)
+  when i_begin <= r_begin and i_end >= r_end do
+    tree(occupied: true, range: {i_begin, i_end})
+  end
 
-      # Empty tree, when not occupied
-      {nil, nil, nil} ->
-        tree(occupied: exists, range: {ins_begin, ins_end})
+  # Handle split of root where the inserted range is greater than existing.
+  defp iput({true, {r_begin, r_end}, nil, nil}, i_begin, i_end, _exists)
+  when i_begin > r_end do
+    tree(range: {r_begin, i_end},
+      left: tree(occupied: true, range: {r_begin, r_end}),
+      right: tree(occupied: true, range: {i_begin, i_end}))
+  end
 
-      # Handle insertion of subset in root.
-      #
-      {true, nil, nil} when ins_begin >= range_begin and ins_end <= range_end ->
-        tree
+  # Handle split of root where the inserted range is less than existing.
+  defp iput({true, {r_begin, r_end}, nil, nil}, i_begin, i_end, _exists)
+  when i_end < r_begin do
+    tree(range: {i_begin, r_end},
+      left: tree(occupied: true, range: {i_begin, i_end}),
+      right: tree(occupied: true, range: {r_begin, r_end}))
+  end
 
-      # Handle insertion of superset in root.
-      #
-      {true, nil, nil} when ins_begin <= range_begin and ins_end >= range_end ->
-        tree(occupied: true, range: {ins_begin, ins_end})
+  # Handle split of root where the inserted range intersect with beginning of existing.
+  defp iput({true, {r_begin, r_end}, nil, nil}, i_begin, i_end, _exists)
+  when i_end in r_begin .. r_end do
+    mid = Statistics.median(i_begin .. r_end)
 
-      # Handle split of root where the inserted range is greater than existing.
-      #
-      {true, nil, nil} when ins_begin > range_end ->
-        tree(range: {range_begin, ins_end},
-             left: tree(occupied: true, range: {range_begin, range_end}),
-             right: tree(occupied: true, range: {ins_begin, ins_end}))
+    tree(range: {i_begin, r_end},
+      left: tree(occupied: true, range: {i_begin, mid}),
+      right: tree(occupied: true, range: {mid+1, r_end}))
+  end
 
-      # Handle split of root where the inserted range is less than existing.
-      #
-      {true, nil, nil} when ins_end < range_begin ->
-        tree(range: {ins_begin, range_end},
-             left: tree(occupied: true, range: {ins_begin, ins_end}),
-             right: tree(occupied: true, range: {range_begin, range_end}))
+  # Handle split of root where the inserted range intersect with end of existing.
+  defp iput({true, {r_begin, r_end}, nil, nil}, i_begin, i_end, _exists)
+  when r_end in i_begin .. i_end do
+    mid = Statistics.median(r_begin .. i_end)
 
-      # Handle split of root where the inserted range intersect with beginning of existing.
-      #
-      {true, nil, nil} when ins_end in range_begin .. range_end ->
-        mid = Statistics.median(ins_begin .. range_end)
+    tree(range: {r_begin, i_end},
+      left: tree(occupied: true, range: {r_begin, mid}),
+      right: tree(occupied: true, range: {mid+1, i_end}))
+  end
 
-        tree(range: {ins_begin, range_end},
-             left: tree(occupied: true, range: {ins_begin, mid}),
-             right: tree(occupied: true, range: {mid+1, range_end}))
+  # Node with real data on both sides.
+  defp iput({nil, {r_begin, r_end}, ln, rn}, i_begin, i_end, exists) do
+    {_, _, {_, lre}, _, _} = ln
 
-      # Handle split of root where the inserted range intersect with end of existing.
-      #
-      {true, nil, nil} when range_end in ins_begin .. ins_end ->
-        mid = Statistics.median(range_begin .. ins_end)
+    # If the range can fit left, go there, otherwise go right
+    #
+    if (i_end <= lre) do
+     {__MODULE__, ln_occ, ln_range, ln_ln, ln_rn} = ln
+     newnode = iput({ln_occ, ln_range, ln_ln, ln_rn}, i_begin, i_end, exists)
 
-        tree(range: {range_begin, ins_end},
-             left: tree(occupied: true, range: {range_begin, mid}),
-             right: tree(occupied: true, range: {mid+1, ins_end}))
+     tree(range: {min(r_begin, i_begin), r_end},
+         left: newnode,
+         right: rn)
+    else
+     {__MODULE__, rn_occ, rn_range, rn_ln, rn_rn} = rn
+     newnode = iput({rn_occ, rn_range, rn_ln, rn_rn}, i_begin, i_end, exists)
 
-      # Node with real data on both sides.
-      #
-      {nil, ln, rn} ->
-        {_, _, {_, lre}, _, _} = ln
-
-        # If the range can fit left, go there, otherwise go right
-        #
-        if (ins_end <= lre) do
-         newnode = put(ln, ins_begin, ins_end)
-         tree(range: {min(range_begin, ins_begin), range_end},
-             left: newnode,
-             right: rn)
-        else
-         newnode = put(rn, ins_begin, ins_end)
-         tree(range: {range_begin, max(range_end, ins_end)},
-             left: ln,
-             right: newnode)
-        end
+     tree(range: {r_begin, max(r_end, i_end)},
+         left: ln,
+         right: newnode)
     end
   end
 
