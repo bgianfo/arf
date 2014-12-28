@@ -10,7 +10,7 @@ defmodule Arf do
   require Record
   require Statistics
 
-  @type tree_type :: {atom, boolean, {number|nil, number|nil}, nil | tree_type, nil | tree_type}
+  @type tree_type :: {atom, boolean | nil, {number|nil, number|nil}, nil | tree_type, nil | tree_type}
 
   Record.defrecordp :tree, __MODULE__, occupied: nil, range: {nil,nil}, left: nil, right: nil
 
