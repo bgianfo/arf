@@ -12,7 +12,7 @@ defmodule ArfTest do
   defmacrop assert_members(arf, list) do
     for val <- list do
       quote do
-        assert Arf.member(unquote(arf), unquote(val))
+        assert Arf.contains(unquote(arf), unquote(val))
       end
     end
   end
@@ -23,7 +23,7 @@ defmodule ArfTest do
   defmacrop refute_members(arf, list) do
     for val <- list do
       quote do
-        refute Arf.member(unquote(arf), unquote(val))
+        refute Arf.contains(unquote(arf), unquote(val))
       end
     end
   end
@@ -35,24 +35,30 @@ defmodule ArfTest do
   end
 
   test "membership for nil" do
-    refute Arf.member(nil, 1)
+    refute Arf.contains(nil, 1)
   end
 
   test "Insert invalid range throws" do
     assert_raise(RuntimeError, fn ->
-      Arf.new() |> Arf.insert(6,3)
+      Arf.new() |> Arf.put(6,3)
     end)
   end
 
   test "simple one insert and membership" do
     arf = Arf.new()
-    arf = Arf.insert(arf, 1, 2)
-    assert Arf.member(arf, 1)
+    arf = Arf.put(arf, 1, 2)
+    assert Arf.contains(arf, 1)
+  end
+
+  test "simple one insert and membership with false" do
+    arf = Arf.new()
+    arf = Arf.put(arf, 1, 2, false)
+    refute Arf.contains(arf, 1)
   end
 
   test "duplicate insert and membership" do
-    arf = Arf.new() |> Arf.insert(1, 2)
-    arfsecond = Arf.insert(arf, 1, 2)
+    arf = Arf.new() |> Arf.put(1, 2)
+    arfsecond = Arf.put(arf, 1, 2)
     assert arf == arfsecond
   end
 
@@ -156,7 +162,7 @@ defmodule ArfTest do
   defp barf(ranges) do
 
     Enum.reduce(ranges, Arf.new(), fn {s, e}, acc ->
-      Arf.insert(acc, s, e)
+      Arf.put(acc, s, e)
     end)
 
   end

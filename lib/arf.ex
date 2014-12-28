@@ -24,9 +24,7 @@ defmodule Arf do
 
   """
   @spec new() :: tree_type
-  def new() do
-    tree()
-  end
+  def new(), do: tree()
 
   @doc """
   Encode a range of data staring at `ins_begin` to `ins_end` into the Adaptive Range Filter `tree`.
@@ -34,15 +32,17 @@ defmodule Arf do
 
   ## Examples
 
-      iex> Arf.new() |> Arf.insert(1, 300)
+      iex> Arf.new() |> Arf.put(1, 300)
       {Arf, true, {1, 300}, nil, nil}
 
   """
-  @spec insert(tree_type, number, number) :: tree_type
-  def insert(_tree, ins_begin, ins_end) when ins_begin > ins_end do
+  @spec put(tree_type, number, number, boolean) :: tree_type
+
+  def put(_tree, ins_begin, ins_end, _exists) when ins_begin > ins_end do
       raise "The start of the range being inserted (#{ins_begin}) is greater than the end of the range (#{ins_end})."
   end
-  def insert(tree, ins_begin, ins_end) when Record.is_record(tree) do
+
+  def put(tree, ins_begin, ins_end, exists \\ true) when Record.is_record(tree) do
 
     {__MODULE__, occupied, {range_begin, range_end}, left_node, right_node} = tree
 
@@ -50,7 +50,7 @@ defmodule Arf do
 
       # Empty tree, when not occupied
       {nil, nil, nil} ->
-        tree(occupied: true, range: {ins_begin, ins_end})
+        tree(occupied: exists, range: {ins_begin, ins_end})
 
       # Handle insertion of subset in root.
       #
@@ -102,12 +102,12 @@ defmodule Arf do
         # If the range can fit left, go there, otherwise go right
         #
         if (ins_end <= lre) do
-         newnode = insert(ln, ins_begin, ins_end)
+         newnode = put(ln, ins_begin, ins_end)
          tree(range: {min(range_begin, ins_begin), range_end},
              left: newnode,
              right: rn)
         else
-         newnode = insert(rn, ins_begin, ins_end)
+         newnode = put(rn, ins_begin, ins_end)
          tree(range: {range_begin, max(range_end, ins_end)},
              left: ln,
              right: newnode)
@@ -121,16 +121,16 @@ defmodule Arf do
 
   ## Examples
 
-      iex> Arf.new() |> Arf.insert(1, 300) |> Arf.member(5)
+      iex> Arf.new() |> Arf.put(1, 300) |> Arf.contains(5)
       true
 
-      iex> Arf.new() |> Arf.insert(1, 300) |> Arf.member(750)
+      iex> Arf.new() |> Arf.put(1, 300) |> Arf.contains(750)
       false
 
   """
-  @spec member(tree_type, number) :: boolean
-  def member(nil, _value), do: false
-  def member(tree, value) when Record.is_record(tree) do
+  @spec contains(tree_type, number) :: boolean
+  def contains(nil, _value), do: false
+  def contains(tree, value) when Record.is_record(tree) do
 
     {__MODULE__, occupied, {range_begin, range_end}, lnode, rnode} = tree
 
@@ -152,7 +152,7 @@ defmodule Arf do
       # If we are a root we can short circuit queries into the tree
       # when the value is out of the entire range of the tree.
       {nil, l, r} when range_begin <= value and value <= range_end ->
-          member(l, value) || member(r, value)
+          contains(l, value) || contains(r, value)
 
       # Root with nodes out of range ..
       {nil, _, _} -> false
