@@ -5,7 +5,7 @@ defmodule Arf.Mixfile do
     [
       app: :arf,
       version: "0.0.1",
-      elixir: "~> 1.0",
+      elixir: "~> 1.10",
       desription: description,
       package: package,
       deps: deps,
