@@ -19,7 +19,7 @@ defmodule Arf.Mixfile do
 
   defp deps do
     [
-      { :statistics, "~> 0.2.0" },
+      { :statistics, "~> 0.6.2" },
       { :excoveralls, "~> 0.3", only: [:dev, :test] },
       { :dialyze, "~> 0.1.3", only: [:dev, :test] },
       { :inch_ex, only: [:docs] },
